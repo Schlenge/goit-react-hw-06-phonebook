@@ -1,88 +1,98 @@
-import { Component } from 'react';
-import { nanoid } from 'nanoid';
-import PropTypes from 'prop-types';
-import styles from './ContactForm.module.css';
+import { Formik, Field, Form, ErrorMessage } from 'formik';
+import { object, string } from 'yup';
+import { nanoid } from '@reduxjs/toolkit';
+import { useSelector, useDispatch } from 'react-redux';
+import { addContact } from '../redux/contactsSlice';
+import { getContacts } from '../redux/selectors';
+import toast from 'react-hot-toast';
+import css from './ContactForm.module.css';
 
-export default class ContactForm extends Component {
-  static propTypes = {
-    onAddContact: PropTypes.func.isRequired,
-  };
+const regexName = /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/;
+const regexNumber =
+  /\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/;
 
-  state = {
+const schema = object({
+  name: string()
+    .matches(regexName, 'Name is not valid')
+    .min(2, 'Name too short')
+    .max(15, 'Name too short')
+    .trim()
+    .required('Name is required'),
+  number: string()
+    .matches(regexNumber, 'Phone number is not valid')
+    .min(5, 'Phone number too short')
+    .max(15, 'Phone number too long')
+    .trim()
+    .required('Phone number is required'),
+});
+
+export const ContactForm = () => {
+  const contacts = useSelector(getContacts);
+  const dispatch = useDispatch();
+
+  const initialValues = {
     name: '',
     number: '',
   };
 
-  handleSubmit = e => {
-    e.preventDefault();
-
-    const { name, number } = this.state;
-    const { onAddContact } = this.props;
-    const id = nanoid(5);
-
-    onAddContact({ id, name, number });
-
-    this.setState({
-      name: '',
-      number: '',
-    });
+  const generetedId = () => {
+    return nanoid(5);
   };
 
-  handleChange = e => {
-    const { name, value } = e.target;
-
-    // Verificare pentru litere în câmpul "Name"
-    if (name === 'name' && !/^[a-zA-Zа-яА-Я' -]+$/.test(value)) {
-      alert(
-        'Please enter only letters, apostrophe, dash, and spaces in the Name field.'
-      );
+  const formSubmitHandler = data => {
+    if (contacts.some(contact => contact.name === data.name)) {
+      toast.error(`${data.name} is already in contacts.`);
       return;
     }
-
-    // Verificare pentru cifre în câmpul "Number"
-    if (name === 'number' && !/^[0-9 +()-]+$/.test(value)) {
-      alert(
-        'Phone number must be digits and can contain spaces, dashes, parentheses, and can start with +'
-      );
-      return;
-    }
-
-    this.setState({ [name]: value });
+    dispatch(
+      addContact({ id: generetedId(), name: data.name, number: data.number })
+    );
   };
 
-  render() {
-    const { name, number } = this.state;
+  const handleSubmit = (values, { resetForm }) => {
+    formSubmitHandler(values);
+    resetForm();
+  };
 
-    return (
-      <form className={styles.form} onSubmit={this.handleSubmit}>
-        <label className={styles.label}>
+  return (
+    <Formik
+      initialValues={initialValues}
+      onSubmit={handleSubmit}
+      validationSchema={schema}
+    >
+      <Form className={css.form_wrapper}>
+        <label className={css.label}>
           Name
-          <input
-            className={styles.input}
-            type="text"
+          <Field
+            className={css.input}
             name="name"
+            // pattern="^[a-zA-Zа-яА-Я]+(([' \-][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
             title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-            required
-            value={name}
-            onChange={this.handleChange}
+          />
+          <ErrorMessage
+            component="div"
+            className={css.error_name}
+            name="name"
           />
         </label>
-        <label className={styles.label}>
+        <label className={css.label}>
           Number
-          <input
-            className={styles.input}
-            type="tel"
+          <Field
+            className={css.input}
             name="number"
+            // pattern="\+?\d{1,4}?[ .\-\s]?\(?\d{1,3}?\)?[ .\-\s]?\d{1,4}[ .\-\s]?\d{1,4}[ .\-\s]?\d{1,9}"
             title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
-            required
-            value={number}
-            onChange={this.handleChange}
           />
         </label>
-        <button type="submit" className={styles.button}>
+        <ErrorMessage
+          component="div"
+          className={css.error_number}
+          name="number"
+        />
+        <button className={css.button_add} type="submit">
           Add contact
         </button>
-      </form>
-    );
-  }
-}
+      </Form>
+    </Formik>
+  );
+};
