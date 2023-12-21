@@ -8,7 +8,7 @@ export const ContactItem = ({ contact }) => {
 
   return (
     <li className={css.list_item} key={contact.id}>
-      <div className={css.contact_wrp}>
+      <div>
         {contact.name}: {contact.number}
       </div>
       <button

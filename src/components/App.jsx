@@ -10,21 +10,11 @@ export const App = () => {
   const count = useSelector(getContactsCount);
 
   return (
-    <div
-      style={{
-        padding: '20px 0 0 0',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        color: '#010101',
-      }}
-    >
+    <div className={css.section}>
       <h1 className={css.title}>Phonebook - HW 6</h1>
       <ContactForm />
       <h2 className={css.subtitle}>Contacts</h2>
-      <p className={css.total}>
+      <p className={css.totalContacts}>
         Total contacts in phonebook:
         <span className={css.total_count}> {count}</span>
       </p>
